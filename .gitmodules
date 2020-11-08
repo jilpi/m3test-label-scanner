@@ -1,0 +1,4 @@
+[submodule "generator"]
+	path = generator
+	url = https://github.com/jilpi/m3-test-label-generator.git
+    
