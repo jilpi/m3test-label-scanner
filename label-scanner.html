@@ -30,7 +30,10 @@
         <button id="start-button">Start</button>
         <button id="stop-button">Stop</button>
         <hr>
-                
+
+        <iframe id="label"></iframe>
+        
+
         <script type="module">
             console.info("QR SCANNER - STARTS");
 
@@ -46,6 +49,8 @@
             const camQrResultTimestamp = document.getElementById('cam-qr-result-timestamp');
             const fileQrResult = document.getElementById('file-qr-result');
 
+            const labelIframe = document.getElementById('label');
+
             const REPRINT_INTERVAL = 5000;
 
             var latestResult = "";
@@ -53,6 +58,10 @@
         
             function printLabel(id){
                 console.info(`PRINT LABEL ${id}`);
+
+                // get attributes from label id
+
+                labelIframe.src = 'generator/label-generator.html';                
             }
 
             function setResult(label, result) {
