@@ -4,6 +4,8 @@
         <meta charset="utf-8">
         <title>Label Scanner</title>
         <link rel="stylesheet" href="label-scanner.css">
+        <script src="axios/dist/axios.min.js"></script>
+        <script src="label-scanner.js"></script>
         <!-- <script src="qr-scanner/qr-scanner.umd.min.js"></script> -->
     </head>
 
@@ -40,6 +42,13 @@
             import QrScanner from "./qr-scanner/qr-scanner.min.js";
             QrScanner.WORKER_PATH = './qr-scanner/qr-scanner-worker.min.js';
         
+            const REST_API_URL="https://my-json-server.typicode.com/jilpi/m3test-label-scanner";
+            const REST_API_REQUEST_HEADERS={
+                'X-Header1': 'value1',
+                'X-Token': 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', 
+                'Content-Type': 'application/json'
+            };
+
             const video = document.getElementById('qr-video');
             const camHasCamera = document.getElementById('cam-has-camera');
             const camHasFlash = document.getElementById('cam-has-flash');
@@ -56,12 +65,34 @@
             var latestResult = "";
             var latestResultTime = new Date().getTime();
         
+            function getBookingDataFromAPI(id){
+                // API request
+                var strEndPoint = RAPIDAPI_API_URL + `/bookings/${id}`
+                axios.get(strEndPoint, { headers: RAPIDAPI_REQUEST_HEADERS })
+                    // Handle a successful response from the server
+                    .then(
+                        response => {
+                            // Getting a data object from response that contains the necessary data from the server
+                            const data = response.data;
+                            console.log('data', data);
+                            // Save the unique id that the server gives to our object
+                            STUDENT_ID = data._id;
+                        }
+                    )
+                    // Catch and print errors if any
+                    .catch(error => console.error('On create student error', error));
+            }
+
             function printLabel(id){
                 console.info(`PRINT LABEL ${id}`);
 
-                // get attributes from label id
+                // get attributes from API / booking id
+                axios.
 
-                labelIframe.src = 'generator/label-generator.html';                
+
+                
+                labelIframe.src = 'generator/label-generator.html';
+
             }
 
             function setResult(label, result) {

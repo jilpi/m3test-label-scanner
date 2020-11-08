@@ -2,3 +2,6 @@
 	path = generator
 	url = https://github.com/jilpi/m3-test-label-generator.git
     
+[submodule "axios"]
+	path = axios
+	url = https://github.com/axios/axios.git
