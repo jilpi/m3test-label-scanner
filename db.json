@@ -35,6 +35,18 @@
             "avs": "112233445566",
             "tel": "+41.77889944",
             "email": "simonetta@admin.ch"
+        },
+        {
+            "id": "201109-U78M49T",
+            "site": "Chênes",
+            "service-type": "COV19-RAPID",
+            "firstname": "Olivier",
+            "lastname": "Azavero",
+            "dob": "01-02-1983",
+            "sex": "M",
+            "avs": "112233445566",
+            "tel": "+41.424 34 44",
+            "email": "olivier@beaugosse.ch"
         }
     ]
 }
