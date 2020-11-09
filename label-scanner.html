@@ -10,6 +10,12 @@
     </head>
 
     <body>
+        <iframe id="label"></iframe>
+        <br>
+        <input type="checkbox" id="autoprint-toggle"> Enable Auto Print?
+
+        <hr>
+
         <div>
             <b>Device has camera: </b>
             <span id="cam-has-camera"></span>
@@ -19,7 +25,6 @@
             <video id="qr-video" width="50%" hidden="true"></video>
         </div>
         <h1>Scan area:</h1>
-        <scan-preview></scan-preview>
         <!-- <div>
             <button id="flash-toggle">📸 Flash: <span id="flash-state">off</span></button>
         </div> -->
@@ -31,9 +36,8 @@
         <br>
         <button id="start-button">Start</button>
         <button id="stop-button">Stop</button>
-        <hr>
+        <scan-preview></scan-preview>
 
-        <iframe id="label"></iframe>
         
 
         <script type="module">
@@ -41,7 +45,7 @@
 
             import QrScanner from "./qr-scanner/qr-scanner.min.js";
             QrScanner.WORKER_PATH = './qr-scanner/qr-scanner-worker.min.js';
-        
+            
             const REST_API_URL="https://my-json-server.typicode.com/jilpi/m3test-label-scanner";
             const REST_API_REQUEST_HEADERS={
                 'X-Header1': 'value1',
@@ -57,6 +61,7 @@
             const camQrResult = document.getElementById('cam-qr-result');
             const camQrResultTimestamp = document.getElementById('cam-qr-result-timestamp');
             const fileQrResult = document.getElementById('file-qr-result');
+            const autoprintToggle = document.getElementById('autoprint-toggle');
 
             const labelIframe = document.getElementById('label');
 
@@ -65,39 +70,62 @@
             var latestResult = "";
             var latestResultTime = new Date().getTime();
         
-            function getBookingDataFromAPI(id){
+            function renameKey(o, old_key, new_key){
+                if (old_key !== new_key) {
+                    Object.defineProperty(o, new_key,
+                       Object.getOwnPropertyDescriptor(o, old_key));
+                    delete o[old_key];
+                }
+            }
+
+            async function getBookingDataFromAPI(id){
                 // API request
-                var strEndPoint = RAPIDAPI_API_URL + `/bookings/${id}`
-                axios.get(strEndPoint, { headers: RAPIDAPI_REQUEST_HEADERS })
+                var strEndPoint = REST_API_URL + `/bookings/${id}`;
+                var data = {};
+
+                console.info(`  - API call at: ${strEndPoint}`);
+                await axios.get(strEndPoint, { headers: REST_API_REQUEST_HEADERS })
                     // Handle a successful response from the server
                     .then(
-                        response => {
+                        function (response) {
                             // Getting a data object from response that contains the necessary data from the server
-                            const data = response.data;
-                            console.log('data', data);
-                            // Save the unique id that the server gives to our object
-                            STUDENT_ID = data._id;
+                            data = response.data;
+                            renameKey(data, 'id', 'booking');
                         }
                     )
                     // Catch and print errors if any
-                    .catch(error => console.error('On create student error', error));
+                    .catch(function(error){
+                            console.error('API Call', error)
+                        }
+                    );
+                
+                return data;
             }
 
-            function printLabel(id){
-                console.info(`PRINT LABEL ${id}`);
+            async function printLabel(id){
 
                 // get attributes from API / booking id
-                axios.
+                console.info(`- API Call for ${id}`);
+                const bookingData = await getBookingDataFromAPI(id);
+                console.log('  - Data returned:', bookingData);
+
+                if (autoprintToggle.checked){
+                    bookingData.autoprint="";
+                    console.info('  - Autoprint enabled')
+                }
 
 
-                
-                labelIframe.src = 'generator/label-generator.html';
 
+                console.info(`- Generate label ${id}`);
+                const baseUrl = document.URL.substr(0,document.URL.lastIndexOf('/'));
+                var labelUrl = new URL('generator/label-generator.html', baseUrl);
+                labelUrl.search = new URLSearchParams(bookingData);
+                console.info(`  - Label URL: ${labelUrl.toString()}`);
+                labelIframe.src = labelUrl;
             }
 
             function setResult(label, result) {
-
-                // Print label ?
+                // Get new label?
                 // Yes if:
                 //    - the scanned code is NEW
                 //    - the scanned code is the same as last time, but wasn't scanned for > REPRINT_INTERVAL milliseconds
