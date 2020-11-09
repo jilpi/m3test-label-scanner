@@ -118,7 +118,7 @@
 
                 console.info(`- Generate label ${id}`);
                 const baseUrl = document.URL.substr(0,document.URL.lastIndexOf('/'));
-                var labelUrl = new URL('generator/label-generator.html', baseUrl);
+                const labelUrl = new URL(baseUrl + '/generator/label-generator.html');
                 labelUrl.search = new URLSearchParams(bookingData);
                 console.info(`  - Label URL: ${labelUrl.toString()}`);
                 labelIframe.src = labelUrl;
