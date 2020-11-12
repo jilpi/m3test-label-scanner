@@ -3,8 +3,7 @@
 var latestResult = "";
 var latestResultTime = new Date().getTime();
 // API
-var authorizationToken = "";//"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjozLCJlbWFpbCI6ImotbC5waWNhcmRAbS0zLmNvbSIsInVzZXJuYW1lIjpudWxsLCJmaXJzdG5hbWUiOm51bGwsImxhc3RuYW1lIjpudWxsLCJjb3VudHJ5X2NvZGUiOm51bGwsIm1vYmlsZSI6bnVsbCwiYmlydGhkYXRlIjpudWxsLCJnZW5kZXIiOm51bGwsImNvbmZpcm1lZCI6dHJ1ZSwicm9sZSI6eyJsYWJlbCI6IkFkbWluIn19LCJpYXQiOjE2MDUxMDUyMzIsImV4cCI6MTYwNTE5MTYzMn0.ZBj0V1ExNP9vuNIdqsQNsnCVLSLdQMCIqur982T3ztA";
-
+var authorizationToken = "";
 
 // # Constants declarations
 // ## Key HTML Elements
@@ -16,13 +15,24 @@ const autoprintToggle = document.getElementById('autoprint-toggle');
 const loginStatus = document.getElementById('loginstatus');
 const loginbtn = document.getElementById('loginbtn');
 
+const lbllastname = document.getElementById('lastname');
+const lblfirstname = document.getElementById('firstname');
+const lblgender = document.getElementById('gender');
+const lblavs = document.getElementById('avs');
+const lblinsurance = document.getElementById('insurance');
+const lblmobile = document.getElementById('mobile');
+const lblemail = document.getElementById('email');
+const lblsite_name = document.getElementById('site_name');
+const lbldob = document.getElementById('dob');
+
 const labelIframe = document.getElementById('label');
 
 // ## API
 const REST_API_URL="https://m3-test.ch/api/";
 const API_LABEL_INFO_PATH = "test/info?code=";
 const API_ENDPOINT_LOGIN = 'auth/login';
-var REST_API_REQUEST_HEADERS=setAuthHeaders();
+var REST_API_REQUEST_HEADERS;
+setAuthHeaders();
 
 // ## Others
 const REPRINT_INTERVAL = 5000;
@@ -99,63 +109,61 @@ async function loginprocess(){
 
 }
 
+function niceDate(date){
+    return date.getDate() + "-" + (date.getMonth()+1) + "-" + date.getFullYear()
+}
+
 
 async function getBookingDataFromAPI(id){
     // API request
     var strEndPoint = REST_API_URL + API_LABEL_INFO_PATH + id;
     var data = {};
 
+    console.info(`- API Call for ${id}`);
     console.info(`  - API call at: ${strEndPoint}`);
-    console.info(`    (headers: `+REST_API_REQUEST_HEADERS+`)`);
-    await axios.get(strEndPoint, { headers: REST_API_REQUEST_HEADERS })
-        // Handle a successful response from the server
-        .then(
-            function (response) {
-                // Getting a data object from response that contains the necessary data from the server
-                data["code"] = response.data.code;
-                data["site_name"] = response.data.site_name;
-                data["service_type"] = "COV19-RAPID";
-                data["firstname"] = response.data.patient_firstname;
-                data["lastname"] = response.data.patient_lastname;
-                var birthdate = new Date(Date.parse(response.data.patient_birthdate));
-                data["dob"] = birthdate.getDate() + "-" + (birthdate.getMonth()+1) + "-" + birthdate.getFullYear()
-                data["gender"] = response.data.patient_gender;
-                data["avs"] = response.data.patient_avs;
-                data["insurance"] = response.data.patient_InsurerNumber;
-                data["mobile"] = response.data.patient_phone;
-                data["email"] = response.data.user_email;                
-            }
-        )
-        // Catch and print errors if any
-        .catch(function(error){
-                console.error('API Call error', error)
-            }
-        );
+    console.info(`    headers: `, REST_API_REQUEST_HEADERS);
+    try {
+        var response = await axios.get(strEndPoint, { headers: REST_API_REQUEST_HEADERS })
+        console.log('  - Raw data:', response);
+        // Getting a data object from response that contains the necessary data from the server
+        data["code"] = response.data.code;
+        data["site_name"] = response.data.site_name;
+        data["service_type"] = "COV19-RAPID";
+        data["firstname"] = response.data.patient_firstname;
+        data["lastname"] = response.data.patient_lastname;
+        var birthdate = new Date(Date.parse(response.data.patient_birthdate));
+        data["dob"] = niceDate(birthdate);
+        data["gender"] = response.data.patient_gender;
+        data["avs"] = response.data.patient_avs;
+        data["insurance"] = response.data.patient_InsurerNumber;
+        data["mobile"] = response.data.patient_phone;
+        data["email"] = response.data.user_email;
+        data["bookingdate"] = response.data.date;
+}
+    catch(err){
+        console.error('API Call error', err)
+    }
     
+    console.log('  - Returned booking data:', data);
+
     return data;
 }
 
-async function printLabel(id){
-
-    // get attributes from API / booking id
-    console.info(`- API Call for ${id}`);
-    const bookingData = await getBookingDataFromAPI(id);
-    console.log('  - Data returned:', bookingData);
+async function printLabel(bookingData){
 
     if (autoprintToggle.checked){
         bookingData.autoprint="";
         console.info('  - Autoprint enabled')
     }
 
-
-
-    console.info(`- Generate label ${id}`);
+    console.info(`- Generate label ${bookingData.code}`);
     const baseUrl = document.URL.substr(0,document.URL.lastIndexOf('/'));
     const labelUrl = new URL(baseUrl + '/generator/label-generator.html');
     labelUrl.search = new URLSearchParams(bookingData);
     console.info(`  - Label URL: ${labelUrl.toString()}`);
     labelIframe.src = labelUrl;
 }
+
 
 function startScanner() {
     var result = scanner.start();
@@ -165,15 +173,31 @@ function startScanner() {
         console.error("  - Scanner failed to start !!");
 }
 
-function checkQrCode(result) {
+async function checkQrCode(result) {
     // Get new label?
     // Yes if:
     //    - the scanned code is NEW
     //    - the scanned code is the same as last time, but wasn't scanned for > REPRINT_INTERVAL milliseconds
+    var bookingData;
+
     if ((latestResult != result)
             || (latestResult = result) && (Date.now() - latestResultTime > REPRINT_INTERVAL)) {
 
-        printLabel(result);
+        bookingData = await getBookingDataFromAPI(result);
+        printLabel(bookingData);
+
+        lbllastname.innerHTML = bookingData.lastname;
+        lblfirstname.innerHTML = bookingData.firstname;
+        lblgender.innerHTML = bookingData.gender;
+        
+        lblavs.innerHTML = bookingData.avs;
+        lblinsurance.innerHTML = bookingData.insurance;
+        lblmobile.innerHTML = bookingData.mobile;
+        lblemail.innerHTML = bookingData.email;
+        lblsite_name.innerHTML = bookingData.site_name;
+        lbldob.innerHTML = bookingData.dob;
+
+        window.lbllastname=lbllastname;
     }
 
     // Update latest result
@@ -182,12 +206,13 @@ function checkQrCode(result) {
     
     // Update latest result time
     latestResultTime = Date.now();
-    camQrResultTimestamp.textContent = Date();
+    var time = new Date().toJSON().slice(11,23);
+    camQrResultTimestamp.textContent = time;
 
     // Change result color for REPRINT_INTERVAL milliseconds to indicate timeout
-    label.style.color = 'red';
-    clearTimeout(label.highlightTimeout);
-    label.highlightTimeout = setTimeout(() => label.style.color = 'inherit', 5000);
+    camQrResultTimestamp.style.color = 'red';
+    clearTimeout(camQrResultTimestamp.highlightTimeout);
+    camQrResultTimestamp.highlightTimeout = setTimeout(() => camQrResultTimestamp.style.color = 'inherit', 5000);
 
 }
 
