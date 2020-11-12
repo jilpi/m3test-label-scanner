@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="fr">
+    <head>
+        <meta charset="utf-8">
+        <title>Label Scanner</title>
+        <link rel="stylesheet" href="label-scanner.css">
+        <script src="axios/dist/axios.min.js"></script>
+        <script src="label-scanner.js"></script>
+        <!-- Bootstrap -->
+            <!-- Latest compiled and minified CSS -->
+            <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+            <!-- jQuery library -->
+            <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+            <!-- Popper JS -->
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+            <!-- Latest compiled JavaScript -->
+            <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+
+    <body>
+        
+        <scan-preview></scan-preview>
+        <div>
+            <video id="qr-video" width="50%" hidden="true"></video>
+            Device has camera:<span id="cam-has-camera"></span>
+            <br/>
+            Device has flash:<span id="cam-has-flash"></span>
+            Detected QR code:<span id="cam-qr-result">None</span>
+            <br/>
+            Last detected at:<span id="cam-qr-result-timestamp"></span>
+            <br/>
+            <button id="start-button">Start</button>
+            <button id="stop-button">Stop</button>
+        </div>
+
+        <iframe id="label"></iframe>
+        <br>
+        <input type="checkbox" id="autoprint-toggle"> Enable Auto Print?
+
+
+
+        <script type="module">
+            console.info("QR SCANNER - STARTS");
+
+            import QrScanner from "./qr-scanner/qr-scanner.min.js";
+            QrScanner.WORKER_PATH = './qr-scanner/qr-scanner-worker.min.js';
+            
+            const REST_API_URL="https://my-json-server.typicode.com/jilpi/m3test-label-scanner";
+            const REST_API_REQUEST_HEADERS={
+                'X-Header1': 'value1',
+                'X-Token': 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', 
+                'Content-Type': 'application/json'
+            };
+
+            const video = document.getElementById('qr-video');
+            const camHasCamera = document.getElementById('cam-has-camera');
+            const camHasFlash = document.getElementById('cam-has-flash');
+            const flashToggle = document.getElementById('flash-toggle');
+            const flashState = document.getElementById('flash-state');
+            const camQrResult = document.getElementById('cam-qr-result');
+            const camQrResultTimestamp = document.getElementById('cam-qr-result-timestamp');
+            const fileQrResult = document.getElementById('file-qr-result');
+            const autoprintToggle = document.getElementById('autoprint-toggle');
+
+            const labelIframe = document.getElementById('label');
+
+            const REPRINT_INTERVAL = 5000;
+
+            var latestResult = "";
+            var latestResultTime = new Date().getTime();
+        
+            function renameKey(o, old_key, new_key){
+                if (old_key !== new_key) {
+                    Object.defineProperty(o, new_key,
+                       Object.getOwnPropertyDescriptor(o, old_key));
+                    delete o[old_key];
+                }
+            }
+
+            async function getBookingDataFromAPI(id){
+                // API request
+                var strEndPoint = REST_API_URL + `/bookings/${id}`;
+                var data = {};
+
+                console.info(`  - API call at: ${strEndPoint}`);
+                await axios.get(strEndPoint, { headers: REST_API_REQUEST_HEADERS })
+                    // Handle a successful response from the server
+                    .then(
+                        function (response) {
+                            // Getting a data object from response that contains the necessary data from the server
+                            data = response.data;
+                            renameKey(data, 'id', 'booking');
+                        }
+                    )
+                    // Catch and print errors if any
+                    .catch(function(error){
+                            console.error('API Call', error)
+                        }
+                    );
+                
+                return data;
+            }
+
+            async function printLabel(id){
+
+                // get attributes from API / booking id
+                console.info(`- API Call for ${id}`);
+                const bookingData = await getBookingDataFromAPI(id);
+                console.log('  - Data returned:', bookingData);
+
+                if (autoprintToggle.checked){
+                    bookingData.autoprint="";
+                    console.info('  - Autoprint enabled')
+                }
+
+
+
+                console.info(`- Generate label ${id}`);
+                const baseUrl = document.URL.substr(0,document.URL.lastIndexOf('/'));
+                const labelUrl = new URL(baseUrl + '/generator/label-generator.html');
+                labelUrl.search = new URLSearchParams(bookingData);
+                console.info(`  - Label URL: ${labelUrl.toString()}`);
+                labelIframe.src = labelUrl;
+            }
+
+            function setResult(label, result) {
+                // Get new label?
+                // Yes if:
+                //    - the scanned code is NEW
+                //    - the scanned code is the same as last time, but wasn't scanned for > REPRINT_INTERVAL milliseconds
+                if ((latestResult != result)
+                        || (latestResult = result) && (Date.now() - latestResultTime > REPRINT_INTERVAL)) {
+
+                    printLabel(result);
+                }
+
+                
+                // Update latest result
+                label.textContent = result;
+                latestResult = result;
+                
+                // Update latest result time
+                latestResultTime = Date.now();
+                camQrResultTimestamp.textContent = latestResultTime.toString();
+
+                // Change result color for REPRINT_INTERVAL milliseconds to indicate timeout
+                label.style.color = 'red';
+                clearTimeout(label.highlightTimeout);
+                label.highlightTimeout = setTimeout(() => label.style.color = 'inherit', 5000);
+
+            }
+        
+            function startScanner() {
+                var result = scanner.start();
+                if (result)
+                    console.info("  - Scanner started successfully");
+                else
+                    console.error("  - Scanner failed to start !!");
+            }
+
+            // ######## Set listeners ##########
+            // Scanner Start / Stop buttons
+            document.getElementById('start-button').addEventListener('click', () => {
+                startScanner();
+            });        
+            document.getElementById('stop-button').addEventListener('click', () => {
+                scanner.stop();
+            });
+
+            // ####### Web Cam Scanning #######        
+            // ### Initialisation ###
+            console.info("- Instantiate scanner");
+            QrScanner.hasCamera().then(hasCamera => camHasCamera.textContent = hasCamera);
+        
+            const scanner = new QrScanner(video, result => setResult(camQrResult, result), error => {
+                // camQrResult.textContent = error;
+                // camQrResult.style.color = 'inherit';
+            });
+
+            // for debugging
+            window.scanner = scanner;
+
+
+            // ### Flash Support ###
+            scanner.start().then(() => {
+                scanner.hasFlash().then(hasFlash => {
+                    camHasFlash.textContent = hasFlash;
+                    // if (hasFlash) {
+                    //     flashToggle.style.display = 'inline-block';
+                    //     flashToggle.addEventListener('click', () => {
+                    //         scanner.toggleFlash().then(() => flashState.textContent = scanner.isFlashOn() ? 'on' : 'off');
+                    //     });
+                    // }
+                });
+            });
+
+
+            // ### Display scan area preview ###
+            console.info("- Display scan area");
+            document.getElementsByTagName("scan-preview")[0].appendChild(scanner.$canvas);
+            scanner.$canvas.height="50";
+            scanner.$canvas.style.display = 'block';
+
+            console.info("- Start scanner");
+            startScanner();
+
+            
+
+        </script>
+    </body>
+</html>
+
