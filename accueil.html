@@ -40,7 +40,7 @@
                     <video id="qr-video" width="50%" hidden="true"></video>
                 </div>
                 <div class="col">
-                    <span id="loginstatus">Login status: ❌</span>
+                    <span id="loginstatus">Login status: ✅⚠️</span>
                     <button id="loginbtn">Login</button>
                     Caméra détectée:<span id="cam-has-camera"></span><br/>
                     Dernière lecture: <span id="cam-qr-result-timestamp"></span><br/>
@@ -51,7 +51,7 @@
                         <input type="text" class="form-control" id="cam-qr-result" aria-describedby="basic-addon3">
                         <div class="input-group-append">
                             <button class="btn btn-outline-secondary" type="button" id="btn-check-qrcode">
-                                Button
+                                Vérifier
                             </button>
                         </div>
                     </div>                    
@@ -69,16 +69,24 @@
                     Ins.: <span id="insurance"></span><br/>
                     AVS : <span id="avs"></span>
                     <hr/>
-                    Serv: <span id="service_type"></span><br/>
+                    <!-- Serv: <span id="service_type"></span><br/>
                     Site: <span id="site_name"></span><br/>
                     Date: <span id="bookingdate"></span><br/>
-                    <hr/>
-                    <div id="api_response"></div> 
+                    <hr/> -->
+                    <!-- <div id="api_response"></div>  -->
                   </div>
             </div>
             <div class="row">
                 <div class="col">
                     <iframe id="label"></iframe>
+                    <button id="printbtn" class="btn btn-outline-secondary" 
+                        onclick="
+                            var newWin = window.frames['label'];
+                            newWin.document.write('<body onload=window.print()>This is a new page I inserted</body>');
+                            newWin.document.close();
+                        ">
+                        Print
+                    </button>
                     <br/>
                     <input type="checkbox" id="autoprint-toggle"> Enable Auto Print?
                 </div>

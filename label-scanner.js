@@ -2,8 +2,9 @@
 // ## Latest QR Scanner readings
 var latestResult = "";
 var latestResultTime = new Date().getTime();
+var latestBookingData;
 // API
-var authorizationToken = "";
+var authorizationToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjozLCJlbWFpbCI6ImotbC5waWNhcmRAbS0zLmNvbSIsInVzZXJuYW1lIjpudWxsLCJmaXJzdG5hbWUiOm51bGwsImxhc3RuYW1lIjpudWxsLCJjb3VudHJ5X2NvZGUiOm51bGwsIm1vYmlsZSI6bnVsbCwiYmlydGhkYXRlIjpudWxsLCJnZW5kZXIiOm51bGwsImNvbmZpcm1lZCI6dHJ1ZSwicm9sZSI6eyJsYWJlbCI6IkFkbWluIn19LCJpYXQiOjE2MDUyMDc0NzMsImV4cCI6MTYwNTI5Mzg3M30.AQ-bl_q-a46bnBgdaF-Ip51y5KqcdY0lQGF1u1Dgc78";
 
 // # Constants declarations
 // ## Key HTML Elements
@@ -14,6 +15,7 @@ const camQrResultTimestamp = document.getElementById('cam-qr-result-timestamp');
 const autoprintToggle = document.getElementById('autoprint-toggle');
 const loginStatus = document.getElementById('loginstatus');
 const loginbtn = document.getElementById('loginbtn');
+const printbtn = document.getElementById('printbtn');
 
 const lbllastname = document.getElementById('lastname');
 const lblfirstname = document.getElementById('firstname');
@@ -149,7 +151,7 @@ async function getBookingDataFromAPI(id){
     return data;
 }
 
-async function printLabel(bookingData){
+async function printLabel(bookingData = latestBookingData){
 
     if (autoprintToggle.checked){
         bookingData.autoprint="";
@@ -178,24 +180,23 @@ async function checkQrCode(result) {
     // Yes if:
     //    - the scanned code is NEW
     //    - the scanned code is the same as last time, but wasn't scanned for > REPRINT_INTERVAL milliseconds
-    var bookingData;
 
     if ((latestResult != result)
             || (latestResult = result) && (Date.now() - latestResultTime > REPRINT_INTERVAL)) {
 
-        bookingData = await getBookingDataFromAPI(result);
-        printLabel(bookingData);
+        latestBookingData = await getBookingDataFromAPI(result);
+        printLabel(latestBookingData);
 
-        lbllastname.innerHTML = bookingData.lastname;
-        lblfirstname.innerHTML = bookingData.firstname;
-        lblgender.innerHTML = bookingData.gender;
+        lbllastname.innerHTML = latestBookingData.lastname;
+        lblfirstname.innerHTML = latestBookingData.firstname;
+        lblgender.innerHTML = latestBookingData.gender;
         
-        lblavs.innerHTML = bookingData.avs;
-        lblinsurance.innerHTML = bookingData.insurance;
-        lblmobile.innerHTML = bookingData.mobile;
-        lblemail.innerHTML = bookingData.email;
-        lblsite_name.innerHTML = bookingData.site_name;
-        lbldob.innerHTML = bookingData.dob;
+        lblavs.innerHTML = latestBookingData.avs;
+        lblinsurance.innerHTML = latestBookingData.insurance;
+        lblmobile.innerHTML = latestBookingData.mobile;
+        lblemail.innerHTML = latestBookingData.email;
+        // lblsite_name.innerHTML = latestBookingData.site_name;
+        lbldob.innerHTML = latestBookingData.dob;
 
         window.lbllastname=lbllastname;
     }
