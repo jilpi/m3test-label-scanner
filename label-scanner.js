@@ -85,6 +85,7 @@ async function loginprocess(){
             function (response) {
                 authorizationToken = response.data.token;
                 setAuthHeaders();
+                loginStatus.innerHTML = `Login status: ✅`
                 console.log(response);
                 console.log(authorizationToken);
             }
@@ -112,17 +113,17 @@ async function getBookingDataFromAPI(id){
             function (response) {
                 // Getting a data object from response that contains the necessary data from the server
                 data["code"] = response.data.code;
-                data["site_name"] = response.data.site.name;
+                data["site_name"] = response.data.site_name;
                 data["service_type"] = "COV19-RAPID";
-                data["firstname"] = response.data.patient.firstname;
-                data["lastname"] = response.data.patient.lastname;
-                var birthdate = new Date(Date.parse(response.data.patient.birthdate));
+                data["firstname"] = response.data.patient_firstname;
+                data["lastname"] = response.data.patient_lastname;
+                var birthdate = new Date(Date.parse(response.data.patient_birthdate));
                 data["dob"] = birthdate.getDate() + "-" + (birthdate.getMonth()+1) + "-" + birthdate.getFullYear()
-                data["gender"] = response.data.patient.gender;
-                data["avs"] = response.data.patient.avs;
-                data["insurance"] = response.data.patient.insurer_number;
-                data["mobile"] = response.data.patient.country_code + "-" + response.data.patient.mobile;
-                data["email"] = response.data.user.email;                
+                data["gender"] = response.data.patient_gender;
+                data["avs"] = response.data.patient_avs;
+                data["insurance"] = response.data.patient_InsurerNumber;
+                data["mobile"] = response.data.patient_phone;
+                data["email"] = response.data.user_email;                
             }
         )
         // Catch and print errors if any
