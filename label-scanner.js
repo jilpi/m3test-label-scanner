@@ -140,8 +140,8 @@ async function getBookingDataFromAPI(id){
         data["insurance"] = response.data.patient_InsurerNumber;
         data["mobile"] = response.data.patient_phone;
         data["email"] = response.data.user_email;
-        data["bookingdate"] = response.data.date;
-}
+        data["bookingdate"] = response.data.date;    
+    }
     catch(err){
         console.error('API Call error', err)
     }
@@ -149,6 +149,13 @@ async function getBookingDataFromAPI(id){
     console.log('  - Returned booking data:', data);
 
     return data;
+}
+
+printbtn.onclick = printframe;
+
+function printframe(){
+    labelIframe.focus();
+    labelIframe.contentWindow.print();
 }
 
 async function printLabel(bookingData = latestBookingData){

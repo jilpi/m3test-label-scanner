@@ -79,12 +79,7 @@
             <div class="row">
                 <div class="col">
                     <iframe id="label"></iframe>
-                    <button id="printbtn" class="btn btn-outline-secondary" 
-                        onclick="
-                            var newWin = window.frames['label'];
-                            newWin.document.write('<body onload=window.print()>This is a new page I inserted</body>');
-                            newWin.document.close();
-                        ">
+                    <button id="printbtn" class="btn btn-outline-secondary">
                         Print
                     </button>
                     <br/>
