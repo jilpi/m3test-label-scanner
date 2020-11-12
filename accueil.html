@@ -19,26 +19,44 @@
     </head>
 
     <body>
-        
-        <scan-preview></scan-preview>
-        <div>
-            <video id="qr-video" width="50%" hidden="true"></video>
-            Device has camera:<span id="cam-has-camera"></span>
-            <br/>
-            Device has flash:<span id="cam-has-flash"></span>
-            Detected QR code:<span id="cam-qr-result">None</span>
-            <br/>
-            Last detected at:<span id="cam-qr-result-timestamp"></span>
-            <br/>
-            <button id="start-button">Start</button>
-            <button id="stop-button">Stop</button>
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-4">
+                    <img src="img/logo-m3-sanitrade.png" class="img-fluid"  width="50%">
+                </div>
+                <div class="col-sm-4">
+                    <div class="h1 text-center">
+                        Accueil
+                    </div>
+                </div>
+                <div class="col-sm-4">
+                </div>
+            </div>
         </div>
-
-        <iframe id="label"></iframe>
-        <br>
-        <input type="checkbox" id="autoprint-toggle"> Enable Auto Print?
-
-
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col">
+                    <scan-preview></scan-preview>
+                    <video id="qr-video" width="50%" hidden="true"></video>
+                </div>
+                <div class="col">
+                    <div class="login">Login</div>
+                    Caméra détectée:<span id="cam-has-camera"></span><br/>
+                    Dernière lecture: <span id="cam-qr-result-timestamp"></span><br/>
+                    QR Code:<input type="text" class="form-control" id="cam-qr-result">
+                    <button class="button-primary" id="btn-check-qrcode">Check</button>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    <iframe id="label"></iframe>
+                    <br/>
+                    <input type="checkbox" id="autoprint-toggle"> Enable Auto Print?
+                </div>
+                <div class="col">
+                </div>
+            </div>
+        </div>
 
         <script type="module">
             console.info("QR SCANNER - STARTS");
@@ -46,18 +64,21 @@
             import QrScanner from "./qr-scanner/qr-scanner.min.js";
             QrScanner.WORKER_PATH = './qr-scanner/qr-scanner-worker.min.js';
             
-            const REST_API_URL="https://my-json-server.typicode.com/jilpi/m3test-label-scanner";
+            // const REST_API_URL="https://my-json-server.typicode.com/jilpi/m3test-label-scanner";
+            // const REST_API_REQUEST_HEADERS={
+            //     'X-Token': 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', 
+            //     'Content-Type': 'application/json'
+            // };
+
+            const REST_API_URL="https://m3-test.ch/api/";
             const REST_API_REQUEST_HEADERS={
-                'X-Header1': 'value1',
-                'X-Token': 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', 
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjozLCJlbWFpbCI6ImotbC5waWNhcmRAbS0zLmNvbSIsInVzZXJuYW1lIjpudWxsLCJmaXJzdG5hbWUiOm51bGwsImxhc3RuYW1lIjpudWxsLCJjb3VudHJ5X2NvZGUiOm51bGwsIm1vYmlsZSI6bnVsbCwiYmlydGhkYXRlIjpudWxsLCJnZW5kZXIiOm51bGwsImNvbmZpcm1lZCI6dHJ1ZSwicm9sZSI6eyJsYWJlbCI6IkFkbWluIn19LCJpYXQiOjE2MDUxMDUyMzIsImV4cCI6MTYwNTE5MTYzMn0.ZBj0V1ExNP9vuNIdqsQNsnCVLSLdQMCIqur982T3ztA'
             };
+
 
             const video = document.getElementById('qr-video');
             const camHasCamera = document.getElementById('cam-has-camera');
-            const camHasFlash = document.getElementById('cam-has-flash');
-            const flashToggle = document.getElementById('flash-toggle');
-            const flashState = document.getElementById('flash-state');
             const camQrResult = document.getElementById('cam-qr-result');
             const camQrResultTimestamp = document.getElementById('cam-qr-result-timestamp');
             const fileQrResult = document.getElementById('file-qr-result');
@@ -80,7 +101,7 @@
 
             async function getBookingDataFromAPI(id){
                 // API request
-                var strEndPoint = REST_API_URL + `/bookings/${id}`;
+                var strEndPoint = REST_API_URL + `test/info?code=${id}`;
                 var data = {};
 
                 console.info(`  - API call at: ${strEndPoint}`);
@@ -90,7 +111,7 @@
                         function (response) {
                             // Getting a data object from response that contains the necessary data from the server
                             data = response.data;
-                            renameKey(data, 'id', 'booking');
+//                            renameKey(data, 'id', 'code');
                         }
                     )
                     // Catch and print errors if any
@@ -99,7 +120,9 @@
                         }
                     );
                 
-                return data;
+                var filtered_data;
+                
+                return _.pick(data, );
             }
 
             async function printLabel(id){
@@ -124,7 +147,7 @@
                 labelIframe.src = labelUrl;
             }
 
-            function setResult(label, result) {
+            function setResult(result) {
                 // Get new label?
                 // Yes if:
                 //    - the scanned code is NEW
@@ -135,14 +158,13 @@
                     printLabel(result);
                 }
 
-                
                 // Update latest result
-                label.textContent = result;
+                camQrResult.value = result;
                 latestResult = result;
                 
                 // Update latest result time
                 latestResultTime = Date.now();
-                camQrResultTimestamp.textContent = latestResultTime.toString();
+                camQrResultTimestamp.textContent = Date();
 
                 // Change result color for REPRINT_INTERVAL milliseconds to indicate timeout
                 label.style.color = 'red';
@@ -151,6 +173,25 @@
 
             }
         
+            // ####### Web Cam Scanning #######        
+            // ### Initialisation ###
+            console.info("- Instantiate scanner");
+            QrScanner.hasCamera().then(
+                function(hasCamera) {
+                    console.info(`  - Camera${hasCamera?"":" not"} found`);
+                    camHasCamera.textContent = hasCamera ? "✅" : "❌"
+                }
+            );
+        
+        
+            const scanner = new QrScanner(video, result => setResult(result), error => {
+                // camQrResult.textContent = error;
+                // camQrResult.style.color = 'inherit';
+            });
+
+            // for debugging
+            window.scanner = scanner;
+
             function startScanner() {
                 var result = scanner.start();
                 if (result)
@@ -159,41 +200,6 @@
                     console.error("  - Scanner failed to start !!");
             }
 
-            // ######## Set listeners ##########
-            // Scanner Start / Stop buttons
-            document.getElementById('start-button').addEventListener('click', () => {
-                startScanner();
-            });        
-            document.getElementById('stop-button').addEventListener('click', () => {
-                scanner.stop();
-            });
-
-            // ####### Web Cam Scanning #######        
-            // ### Initialisation ###
-            console.info("- Instantiate scanner");
-            QrScanner.hasCamera().then(hasCamera => camHasCamera.textContent = hasCamera);
-        
-            const scanner = new QrScanner(video, result => setResult(camQrResult, result), error => {
-                // camQrResult.textContent = error;
-                // camQrResult.style.color = 'inherit';
-            });
-
-            // for debugging
-            window.scanner = scanner;
-
-
-            // ### Flash Support ###
-            scanner.start().then(() => {
-                scanner.hasFlash().then(hasFlash => {
-                    camHasFlash.textContent = hasFlash;
-                    // if (hasFlash) {
-                    //     flashToggle.style.display = 'inline-block';
-                    //     flashToggle.addEventListener('click', () => {
-                    //         scanner.toggleFlash().then(() => flashState.textContent = scanner.isFlashOn() ? 'on' : 'off');
-                    //     });
-                    // }
-                });
-            });
 
 
             // ### Display scan area preview ###
@@ -205,9 +211,12 @@
             console.info("- Start scanner");
             startScanner();
 
-            
+            // ### Set on clicks ###
+            document.getElementById("btn-check-qrcode").onclick = function(){
+                console.info("- Retrieving data for booking ID" + camQrResult.value)
+                setResult(camQrResult.value);                
+            }
 
         </script>
     </body>
 </html>
-
