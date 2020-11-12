@@ -3,7 +3,7 @@
 var latestResult = "";
 var latestResultTime = new Date().getTime();
 // API
-var authorizationToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjozLCJlbWFpbCI6ImotbC5waWNhcmRAbS0zLmNvbSIsInVzZXJuYW1lIjpudWxsLCJmaXJzdG5hbWUiOm51bGwsImxhc3RuYW1lIjpudWxsLCJjb3VudHJ5X2NvZGUiOm51bGwsIm1vYmlsZSI6bnVsbCwiYmlydGhkYXRlIjpudWxsLCJnZW5kZXIiOm51bGwsImNvbmZpcm1lZCI6dHJ1ZSwicm9sZSI6eyJsYWJlbCI6IkFkbWluIn19LCJpYXQiOjE2MDUxMDUyMzIsImV4cCI6MTYwNTE5MTYzMn0.ZBj0V1ExNP9vuNIdqsQNsnCVLSLdQMCIqur982T3ztA";
+var authorizationToken = "";//"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjozLCJlbWFpbCI6ImotbC5waWNhcmRAbS0zLmNvbSIsInVzZXJuYW1lIjpudWxsLCJmaXJzdG5hbWUiOm51bGwsImxhc3RuYW1lIjpudWxsLCJjb3VudHJ5X2NvZGUiOm51bGwsIm1vYmlsZSI6bnVsbCwiYmlydGhkYXRlIjpudWxsLCJnZW5kZXIiOm51bGwsImNvbmZpcm1lZCI6dHJ1ZSwicm9sZSI6eyJsYWJlbCI6IkFkbWluIn19LCJpYXQiOjE2MDUxMDUyMzIsImV4cCI6MTYwNTE5MTYzMn0.ZBj0V1ExNP9vuNIdqsQNsnCVLSLdQMCIqur982T3ztA";
 
 
 // # Constants declarations
@@ -13,16 +13,16 @@ const camHasCamera = document.getElementById('cam-has-camera');
 const camQrResult = document.getElementById('cam-qr-result');
 const camQrResultTimestamp = document.getElementById('cam-qr-result-timestamp');
 const autoprintToggle = document.getElementById('autoprint-toggle');
+const loginStatus = document.getElementById('loginstatus');
+const loginbtn = document.getElementById('loginbtn');
 
 const labelIframe = document.getElementById('label');
 
 // ## API
 const REST_API_URL="https://m3-test.ch/api/";
 const API_LABEL_INFO_PATH = "test/info?code=";
-const REST_API_REQUEST_HEADERS={
-    'content-type': 'application/json',
-    'Authorization': 'Bearer ' + authorizationToken
-};
+const API_ENDPOINT_LOGIN = 'auth/login';
+var REST_API_REQUEST_HEADERS=setAuthHeaders();
 
 // ## Others
 const REPRINT_INTERVAL = 5000;
@@ -45,7 +45,7 @@ QrScanner.WORKER_PATH = './qr-scanner/qr-scanner-worker.min.js';
 
 // Instantiate Scanner
 console.info("- Instantiate scanner");
-const scanner = new QrScanner(video, result => setResult(result), error => {
+const scanner = new QrScanner(video, result => checkQrCode(result), error => {
     // camQrResult.textContent = error;
     // camQrResult.style.color = 'inherit';
 });
@@ -63,22 +63,41 @@ scanner.$canvas.style.display = 'block';
 console.info("- Start scanner");
 startScanner();
 
-
 // # Setup buttons
 // ## Check Code Manually
 document.getElementById("btn-check-qrcode").onclick = function(){
     console.info("- Retrieving data for booking ID" + camQrResult.value)
-    setResult(camQrResult.value);                
+    checkQrCode(camQrResult.value);                
 }
 
+loginbtn.onclick = loginprocess;
 
-function startScanner() {
-    var result = scanner.start();
-    if (result)
-        console.info("  - Scanner started successfully");
-    else
-        console.error("  - Scanner failed to start !!");
+async function loginprocess(){
+    var email = prompt("Your email?");
+    var password = prompt("Your password?");
+    await axios.post(REST_API_URL + API_ENDPOINT_LOGIN, 
+        {
+            'email': email,
+            'password': password
+        } )
+        // Handle a successful response from the server
+        .then(
+            function (response) {
+                authorizationToken = response.data.token;
+                setAuthHeaders();
+                console.log(response);
+                console.log(authorizationToken);
+            }
+        )
+        // Catch and print errors if any
+        .catch(function(error){
+                console.error('API Call', error)
+            }
+        );
+
+
 }
+
 
 async function getBookingDataFromAPI(id){
     // API request
@@ -86,7 +105,7 @@ async function getBookingDataFromAPI(id){
     var data = {};
 
     console.info(`  - API call at: ${strEndPoint}`);
-
+    console.info(`    (headers: `+REST_API_REQUEST_HEADERS+`)`);
     await axios.get(strEndPoint, { headers: REST_API_REQUEST_HEADERS })
         // Handle a successful response from the server
         .then(
@@ -137,8 +156,15 @@ async function printLabel(id){
     labelIframe.src = labelUrl;
 }
 
+function startScanner() {
+    var result = scanner.start();
+    if (result)
+        console.info("  - Scanner started successfully");
+    else
+        console.error("  - Scanner failed to start !!");
+}
 
-function setResult(result) {
+function checkQrCode(result) {
     // Get new label?
     // Yes if:
     //    - the scanned code is NEW
@@ -164,6 +190,12 @@ function setResult(result) {
 
 }
 
+function setAuthHeaders(){
+    REST_API_REQUEST_HEADERS = {
+        'content-type': 'application/json',
+        'Authorization': 'Bearer ' + authorizationToken
+    }
+}
 
 // # Tools
 // renameKey in an object
