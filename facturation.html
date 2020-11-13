@@ -2,10 +2,10 @@
 <html lang="fr">
     <head>
         <meta charset="utf-8">
-        <title>Scanner - Accueil</title>
+        <title>Scanner - Facturation</title>
         <link rel="stylesheet" href="label-scanner.css">
         <script src="axios/dist/axios.min.js"></script>
-        <script src="label-scanner.js"></script>
+        <script src="label-scanner-invoicing.js"></script>
         <!-- Bootstrap -->
             <!-- Latest compiled and minified CSS -->
             <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
@@ -26,7 +26,7 @@
                 </div>
                 <div class="col-sm-4">
                     <div class="h1 text-center">
-                        Accueil
+                        Facturation
                     </div>
                 </div>
                 <div class="col-sm-4">
@@ -67,7 +67,11 @@
                     Mobi: <span id="mobile"></span><br/>
                     Mail: <span id="email"></span><br/>
                     Ins.: <span id="insurance"></span><br/>
-                    AVS : <span id="avs"></span>
+                    AVS : <span id="avs"></span><br/>
+                    <hr/>
+                    Adresse: <span id="address"></span><br/>
+                    <hr/>
+                    Symptômes: <span id="symptoms"></span><br/>
                     <hr/>
                     <!-- Serv: <span id="service_type"></span><br/>
                     Site: <span id="site_name"></span><br/>
@@ -76,21 +80,9 @@
                     <!-- <div id="api_response"></div>  -->
                   </div>
             </div>
-            <div class="row">
-                <div class="col">
-                    <iframe id="label"></iframe>
-                    <button id="printbtn" class="btn btn-outline-secondary">
-                        Print
-                    </button>
-                    <br/>
-                    <input type="checkbox" id="autoprint-toggle"> Enable Auto Print?
-                </div>
-                <div class="col">
-                </div>
-            </div>
         </div>
 
-        <script type="module" src="label-scanner.js">
+        <script type="module" src="label-scanner-invoicing.js">
 
         </script>
     </body>
