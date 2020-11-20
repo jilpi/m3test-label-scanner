@@ -2,9 +2,10 @@
 // ## Latest QR Scanner readings
 var latestResult = "";
 var latestResultTime = new Date().getTime();
+var latestBookingData;
 var latestInvoicingData;
 // API
-var authorizationToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjo0NSwiZW1haWwiOiJtMy10ZXN0QGVrYW1pLmNoIiwidXNlcm5hbWUiOm51bGwsImZpcnN0bmFtZSI6bnVsbCwibGFzdG5hbWUiOm51bGwsImNvdW50cnlfY29kZSI6bnVsbCwibW9iaWxlIjpudWxsLCJiaXJ0aGRhdGUiOm51bGwsImdlbmRlciI6bnVsbCwiY29uZmlybWVkIjp0cnVlLCJyb2xlIjp7ImxhYmVsIjoiQWRtaW4ifX0sImlhdCI6MTYwNTc2NTQ3MiwiZXhwIjoxNjA1ODUxODcyfQ.oxgwlvTIklZ25iGahTVdMgMdT1ISWvz5bQOX9fa6KXo";
+var authorizationToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjo0NSwiZW1haWwiOiJtMy10ZXN0QGVrYW1pLmNoIiwidXNlcm5hbWUiOm51bGwsImZpcnN0bmFtZSI6bnVsbCwibGFzdG5hbWUiOm51bGwsImNvdW50cnlfY29kZSI6bnVsbCwibW9iaWxlIjpudWxsLCJiaXJ0aGRhdGUiOm51bGwsImdlbmRlciI6bnVsbCwiY29uZmlybWVkIjp0cnVlLCJyb2xlIjp7ImxhYmVsIjoiQWRtaW4ifX0sImlhdCI6MTYwNTg0ODE4OCwiZXhwIjoxNjA1OTM0NTg4fQ.e5L64O9eaixJMzC62m_ZPT7q2Li_SvvZnLuKroBTn3c";
 
 // # Constants declarations
 // ## Key HTML Elements
@@ -12,8 +13,10 @@ const video = document.getElementById('qr-video');
 const camHasCamera = document.getElementById('cam-has-camera');
 const camQrResult = document.getElementById('cam-qr-result');
 const camQrResultTimestamp = document.getElementById('cam-qr-result-timestamp');
+const autoprintToggle = document.getElementById('autoprint-toggle');
 const loginStatus = document.getElementById('loginstatus');
 const loginbtn = document.getElementById('loginbtn');
+const printbtn = document.getElementById('printbtn');
 
 const lbllastname = document.getElementById('lastname');
 const lblfirstname = document.getElementById('firstname');
@@ -28,6 +31,7 @@ const lbldob = document.getElementById('dob');
 const lbladresse = document.getElementById('address');
 const lblsymptoms = document.getElementById('symptoms');
 
+const labelIframe = document.getElementById('label');
 
 // ## API
 const REST_API_URL="https://m3-test.ch/api/";
@@ -77,17 +81,34 @@ startScanner();
 
 // # Setup buttons
 // ## Check Code Manually
-document.getElementById("btn-check-qrcode").onclick = function(){
-    console.info("- Retrieving data for booking ID" + camQrResult.value);
-    checkQrCode(camQrResult.value);
+try{
+    document.getElementById("btn-check-qrcode").onclick = function(){
+        console.info("- Retrieving data for booking ID" + camQrResult.value);
+        checkQrCode(camQrResult.value);
+    }
 }
+catch{}
+
+try{
+    document.getElementById("btn-check-qrcode-invoicing").onclick = function(){
+        console.info("- Retrieving data for booking ID" + camQrResult.value);
+        checkQrCode_invoicing(camQrResult.value);
+    }
+}
+catch{}
 
 loginbtn.onclick = loginprocess;
+printbtn.onclick = printframe;
+
+function printframe(){
+    labelIframe.focus();
+    labelIframe.contentWindow.print();
+}
+
 
 async function loginprocess(){
     var email = prompt("Your email?");
     var password = prompt("Your password?");
-
     await axios.post(REST_API_URL + API_ENDPOINT_LOGIN, 
         {
             'email': email,
@@ -114,7 +135,7 @@ function niceDate(date){
     return date.getDate() + "-" + (date.getMonth()+1) + "-" + date.getFullYear()
 }
 
-async function getBookingDataFromAPI(id){
+async function getInvoicingDataFromAPI(id){
     var strEndPoint = REST_API_URL + API_LABEL_INFO_PATH + id;
     var data = {};
 
@@ -144,7 +165,9 @@ async function getBookingDataFromAPI(id){
             "address1": response.data.patient_address_line_1,
             "address2": response.data.patient_address_line_2,
             "postcode": response.data.patient_postal_code,
-            "city": response.data.patient_city
+            "city": response.data.patient_city,
+            "country": response.data.patient_country,
+            "insurer_name": response.data.patient_insurer_name
         }
     }
     catch(err){
@@ -156,6 +179,57 @@ async function getBookingDataFromAPI(id){
     return data;
 }
 
+async function getBookingDataFromAPI(id){
+    // API request
+    var strEndPoint = REST_API_URL + API_LABEL_INFO_PATH + id;
+    var data = {};
+
+    console.info(`- API Call for ${id}`);
+    console.info(`  - API call at: ${strEndPoint}`);
+    console.info(`    headers: `, REST_API_REQUEST_HEADERS);
+    try {
+        var response = await axios.get(strEndPoint, { headers: REST_API_REQUEST_HEADERS })
+        console.log('  - Raw data:', response);
+        // Getting a data object from response that contains the necessary data from the server
+        data["code"] = response.data.code;
+        data["site_name"] = response.data.site_name;
+        data["service_type"] = "COV19-RAPID";
+        data["firstname"] = response.data.patient_firstname;
+        data["lastname"] = response.data.patient_lastname;
+        var birthdate = new Date(Date.parse(response.data.patient_birthdate));
+        data["dob"] = niceDate(birthdate);
+        data["gender"] = response.data.patient_gender;
+        data["avs"] = response.data.patient_avs;
+        data["insurance"] = response.data.patient_InsurerNumber;
+        data["mobile"] = response.data.patient_phone;
+        data["email"] = response.data.user_email;
+        data["bookingdate"] = response.data.date;    
+    }
+    catch(err){
+        console.error('API Call error', err)
+    }
+    
+    console.log('  - Returned booking data:', data);
+
+    return data;
+}
+
+async function printLabel(bookingData = latestBookingData){
+    if (autoprintToggle && autoprintToggle.checked){
+        bookingData.autoprint="";
+        console.info('  - Autoprint enabled')
+    }
+
+    console.info(`- Generate label ${bookingData.code}`);
+    const baseUrl = document.URL.substr(0,document.URL.lastIndexOf('/'));
+    const labelUrl = new URL(baseUrl + '/generator/label-generator.html');
+    labelUrl.search = new URLSearchParams(bookingData);
+    console.info(`  - Label URL: ${labelUrl.toString()}`);
+    if (labelIframe) {
+        labelIframe.src = labelUrl;
+    }
+}
+
 function startScanner() {
     var result = scanner.start();
     if (result)
@@ -164,7 +238,7 @@ function startScanner() {
         console.error("  - Scanner failed to start !!");
 }
 
-async function checkQrCode(result) {
+async function checkQrCode_invoicing(result) {
     // Get new label?
     // Yes if:
     //    - the scanned code is NEW
@@ -174,6 +248,7 @@ async function checkQrCode(result) {
             || (latestResult = result) && (Date.now() - latestResultTime > REPRINT_INTERVAL)) {
 
         latestInvoicingData = await getBookingDataFromAPI(result);
+        printLabel(latestInvoicingData);
 
         lbllastname.textContent = latestInvoicingData.lastname;
         lblfirstname.textContent = latestInvoicingData.firstname;
@@ -189,9 +264,9 @@ async function checkQrCode(result) {
         lbladresse.textContent = `${latestInvoicingData.address1} *
         ${latestInvoicingData.address2} *
         ${latestInvoicingData.postcode} *
-        ${latestInvoicingData.city}`
+        ${latestInvoicingData.city} *
+        ${latestInvoicingData.country}`;
 
-        window.lbllastname=lbllastname;
     }
 
     // Update latest result
@@ -211,6 +286,47 @@ async function checkQrCode(result) {
 }
 
 
+async function checkQrCode(result) {
+    // Get new label?
+    // Yes if:
+    //    - the scanned code is NEW
+    //    - the scanned code is the same as last time, but wasn't scanned for > REPRINT_INTERVAL milliseconds
+
+    if ((latestResult != result)
+            || (latestResult = result) && (Date.now() - latestResultTime > REPRINT_INTERVAL)) {
+
+        latestBookingData = await getBookingDataFromAPI(result);
+        printLabel(latestBookingData);
+
+        lbllastname.innerHTML = latestBookingData.lastname;
+        lblfirstname.innerHTML = latestBookingData.firstname;
+        lblgender.innerHTML = latestBookingData.gender;
+        
+        lblavs.innerHTML = latestBookingData.avs;
+        lblinsurance.innerHTML = latestBookingData.insurance;
+        lblmobile.innerHTML = latestBookingData.mobile;
+        lblemail.innerHTML = latestBookingData.email;
+        // lblsite_name.innerHTML = latestBookingData.site_name;
+        lbldob.innerHTML = latestBookingData.dob;
+
+        window.lbllastname=lbllastname;
+    }
+
+    // Update latest result
+    camQrResult.value = result;
+    latestResult = result;
+    
+    // Update latest result time
+    latestResultTime = Date.now();
+    var time = new Date().toJSON().slice(11,23);
+    camQrResultTimestamp.textContent = time;
+
+    // Change result color for REPRINT_INTERVAL milliseconds to indicate timeout
+    camQrResultTimestamp.style.color = 'red';
+    clearTimeout(camQrResultTimestamp.highlightTimeout);
+    camQrResultTimestamp.highlightTimeout = setTimeout(() => camQrResultTimestamp.style.color = 'inherit', 5000);
+
+}
 
 function setAuthHeaders(){
     REST_API_REQUEST_HEADERS = {
