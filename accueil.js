@@ -5,7 +5,7 @@ var latestResultTime = new Date().getTime();
 var latestBookingData;
 var latestInvoicingData;
 // API
-var authorizationToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjozLCJlbWFpbCI6ImotbC5waWNhcmRAbS0zLmNvbSIsInVzZXJuYW1lIjpudWxsLCJmaXJzdG5hbWUiOm51bGwsImxhc3RuYW1lIjpudWxsLCJjb3VudHJ5X2NvZGUiOm51bGwsIm1vYmlsZSI6bnVsbCwiYmlydGhkYXRlIjpudWxsLCJnZW5kZXIiOm51bGwsImNvbmZpcm1lZCI6dHJ1ZSwicm9sZSI6eyJsYWJlbCI6IkFkbWluIn19LCJpYXQiOjE2MDY5NzM1MzcsImV4cCI6MTYwNzA1OTkzN30.mwoBFcsZh9xkT352oyxQMX8DbxUrPrpx7yHSoh9HFo4";
+var authorizationToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjo4MTk3LCJlbWFpbCI6ImFjY3VlaWxAbTMtdGVzdC5jaCIsInVzZXJuYW1lIjpudWxsLCJmaXJzdG5hbWUiOm51bGwsImxhc3RuYW1lIjpudWxsLCJjb3VudHJ5X2NvZGUiOiIrMzMiLCJtb2JpbGUiOiIwNjg5MDg5NjczIiwiYmlydGhkYXRlIjpudWxsLCJnZW5kZXIiOm51bGwsImNvbmZpcm1lZCI6dHJ1ZSwicm9sZSI6eyJsYWJlbCI6IlN0YW5kYXJkIn19LCJpYXQiOjE2MDg1NTExNDEsImV4cCI6MTYwODYzNzU0MX0.0Z0krsXsDd_5BQofJ95cAxRe5xf1P5u1bIbnP10KsbI";
 
 // # Constants declarations
 // ## Key HTML Elements
@@ -31,14 +31,18 @@ const lbldob = document.getElementById('dob');
 const lbladresse = document.getElementById('address');
 const lblsymptoms = document.getElementById('symptoms');
 
+const lblreason = document.getElementById('reason');
+const lbltype = document.getElementById('type');
+
 const labelIframe = document.getElementById('label');
 
 // ## API
 const REST_API_URL="https://m3-test.ch/api/";
 const API_LABEL_INFO_PATH = "test/info?code=";
-const API_ENDPOINT_LOGIN = 'auth/login';
+const API_ENDPOINT_LOGIN = 'auth/login/standard';
 var REST_API_REQUEST_HEADERS;
 setAuthHeaders();
+
 
 // ## Others
 const REPRINT_INTERVAL = 5000;
@@ -135,49 +139,51 @@ function niceDate(date){
     return date.getDate() + "-" + (date.getMonth()+1) + "-" + date.getFullYear()
 }
 
-async function getInvoicingDataFromAPI(id){
-    var strEndPoint = REST_API_URL + API_LABEL_INFO_PATH + id;
-    var data = {};
+// async function getInvoicingDataFromAPI(id){
+//     var strEndPoint = REST_API_URL + API_LABEL_INFO_PATH + id;
+//     var data = {};
 
-    console.info(`- API Call for ${id}`);
-    console.info(`  - API call at: ${strEndPoint}`);
-    console.info(`    headers: `, REST_API_REQUEST_HEADERS);
+//     console.info(`- API Call for ${id}`);
+//     console.info(`  - API call at: ${strEndPoint}`);
+//     console.info(`    headers: `, REST_API_REQUEST_HEADERS);
  
  
-    try {
-        var response = await axios.get(strEndPoint, { headers: REST_API_REQUEST_HEADERS })
-        console.log('  - Raw data:', response);
-        // Getting a data object from response that contains the necessary data from the server
-        var birthdate = new Date(Date.parse(response.data.patient_birthdate));
-        data = {
-            "code": response.data.code,
-            "site_name": response.data.site_name,
-            "service_type": "COV19-RAPID",
-            "firstname": response.data.patient_firstname,
-            "lastname": response.data.patient_lastname,
-            "dob": niceDate(birthdate),
-            "gender": response.data.patient_gender,
-            "avs": response.data.patient_avs,
-            "insurance": response.data.patient_InsurerNumber,
-            "mobile": response.data.patient_phone,
-            "email": response.data.user_email,
-            "bookingdate": response.data.date,
-            "address1": response.data.patient_address_line_1,
-            "address2": response.data.patient_address_line_2,
-            "postcode": response.data.patient_postal_code,
-            "city": response.data.patient_city,
-            "country": response.data.patient_country,
-            "insurer_name": response.data.patient_insurer_name
-        }
-    }
-    catch(err){
-        console.error('API Call error', err)
-    }
+//     try {
+//         var response = await axios.get(strEndPoint, { headers: REST_API_REQUEST_HEADERS })
+//         console.log('  - Raw data:', response);
+//         // Getting a data object from response that contains the necessary data from the server
+//         var birthdate = new Date(Date.parse(response.data.patient_birthdate));
+//         data = {
+//             "code": response.data.code,
+//             "site_name": response.data.site_name,
+//             "service_type": `COV19-${response.data.type.toUpperCase()}`,
+//             "firstname": response.data.patient_firstname,
+//             "lastname": response.data.patient_lastname,
+//             "dob": niceDate(birthdate),
+//             "gender": response.data.patient_gender,
+//             "avs": response.data.patient_avs,
+//             "insurance": response.data.patient_InsurerNumber,
+//             "mobile": response.data.patient_phone,
+//             "email": response.data.user_email,
+//             "bookingdate": response.data.date,
+//             "address1": response.data.patient_address_line_1,
+//             "address2": response.data.patient_address_line_2,
+//             "postcode": response.data.patient_postal_code,
+//             "city": response.data.patient_city,
+//             "country": response.data.patient_country,
+//             "insurer_name": response.data.patient_insurer_name,
+//             "type": response.data.type,
+//             "reason": response.data.reason
+//         }
+//     }
+//     catch(err){
+//         console.error('API Call error', err)
+//     }
 
-    console.log('  - Returned invoicing data:', data);
+//     console.log('  - Returned invoicing data:', data);
 
-    return data;
-}
+//     return data;
+// }
 
 async function getBookingDataFromAPI(id){
     // API request
@@ -193,7 +199,7 @@ async function getBookingDataFromAPI(id){
         // Getting a data object from response that contains the necessary data from the server
         data["code"] = response.data.code;
         data["site_name"] = response.data.site_name;
-        data["service_type"] = "COV19-RAPID";
+        data["service_type"] = `COV19-${response.data.type.toUpperCase()}`;
         data["firstname"] = response.data.patient_firstname;
         data["lastname"] = response.data.patient_lastname;
         var birthdate = new Date(Date.parse(response.data.patient_birthdate));
@@ -204,6 +210,8 @@ async function getBookingDataFromAPI(id){
         data["mobile"] = response.data.patient_phone;
         data["email"] = response.data.user_email;
         data["bookingdate"] = response.data.date;    
+        data["type"] = response.data.type;
+        data["reason"] = response.data.reason;
     }
     catch(err){
         console.error('API Call error', err)
@@ -267,6 +275,8 @@ async function checkQrCode_invoicing(result) {
         ${latestInvoicingData.city} *
         ${latestInvoicingData.country}`;
 
+        lbltype.textContent = latestInvoicingData.type;
+        lblreason.textContent = latestInvoicingData.reason;
     }
 
     // Update latest result
@@ -310,6 +320,9 @@ async function checkQrCode(result) {
         lbldob.innerHTML = latestBookingData.dob;
 
         window.lbllastname=lbllastname;
+
+        lbltype.textContent = latestBookingData.type;
+        lblreason.textContent = latestBookingData.reason;
     }
 
     // Update latest result
